@@ -1,47 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>E-Gram Panchayat | Login / Register</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>E-Gram Panchayat — Login / Register</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
-<body class="auth">
-  <div class="auth-card">
-    <h1>Digital E-Gram Panchayat</h1>
+<body>
+  <h1>🚀 Digital E-Gram Panchayat</h1>
 
-    <!-- Register -->
-    <section>
-      <h2>Create Account</h2>
-      <input id="regName" placeholder="Full Name" />
-      <input id="regAadhaar" placeholder="Aadhaar (last 4 ok for demo)" />
-      <input id="regVillage" placeholder="Village / Ward" />
-      <input id="regPhone" placeholder="Phone" />
-      <input id="regEmail" type="email" placeholder="Email" />
-      <input id="regPass" type="password" placeholder="Password" />
-      <button id="btnRegister">Register</button>
-    </section>
-
-    <hr/>
-
-    <!-- Login -->
-    <section>
-      <h2>Login</h2>
-      <input id="loginEmail" type="email" placeholder="Email" />
-      <input id="loginPass" type="password" placeholder="Password" />
-      <button id="btnLogin">Login</button>
-    </section>
+  <div class="form-box">
+    <h2>Register</h2>
+    <input type="text" id="regName" placeholder="Full Name" />
+    <input type="email" id="regEmail" placeholder="Email" />
+    <input type="password" id="regPassword" placeholder="Password (6+ chars)" />
+    <select id="regRole">
+      <option value="user">User</option>
+      <option value="staff">Staff</option>
+      <option value="admin">Admin</option>
+    </select>
+    <button onclick="register()">Register</button>
   </div>
 
-  <!-- Firebase SDKs (compat for simpler code) -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <div class="form-box">
+    <h2>Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email" />
+    <input type="password" id="loginPassword" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <p><a href="#" onclick="toggleReset(true); return false;">Forgot password?</a></p>
+
+    <div id="resetBox" style="display:none; margin-top:10px;">
+      <input type="email" id="resetEmail" placeholder="Enter your email to reset" />
+      <button onclick="resetPassword()">Send reset email</button>
+      <p><a href="#" onclick="toggleReset(false); return false;">Back to login</a></p>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="app.js"></script>
-  <script>
-    document.getElementById('btnRegister').onclick = registerUser;
-    document.getElementById('btnLogin').onclick = loginUser;
-  </script>
 </body>
 </html>

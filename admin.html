@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>🏛️ Admin Dashboard</h1>
+  <div>
+    <span id="welcomeAdmin">Loading...</span>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <h2>Create Service</h2>
+  <input type="text" id="newService" placeholder="Service Name" />
+  <button onclick="createService()">Add Service</button>
+
+  <h2>Available Services</h2>
+  <ul id="serviceList"></ul>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

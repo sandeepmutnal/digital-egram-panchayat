@@ -1,5 +1,4 @@
-// -------------------- 1) Firebase init --------------------
-// -------------------- 1) Firebase init --------------------
+// -------------------- CONFIG --------------------
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -11,330 +10,293 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
 
-// Helpers
-const $ = (id) => document.getElementById(id);
-const nowTs = () => firebase.firestore.FieldValue.serverTimestamp();
+// -------------------- Helpers --------------------
+function show(msg) { alert(msg); }
+function toggleReset(show) {
+  document.getElementById('resetBox').style.display = show ? 'block' : 'none';
+}
 
-// -------------------- 2) AUTH: Register / Login --------------------
-async function registerUser() {
+// -------------------- AUTH LISTENER & PAGE PROTECTION --------------------
+auth.onAuthStateChanged(async (user) => {
+  const href = window.location.href;
+  const onIndex = href.includes('index.html') || href.endsWith('/') || href.includes('file://') && href.toLowerCase().includes('index.html');
+  const onUserPage = href.includes('user.html');
+  const onStaffPage = href.includes('staff.html');
+  const onAdminPage = href.includes('admin.html');
+
+  if (user) {
+    // get user's role from users collection
+    const doc = await db.collection('users').doc(user.uid).get();
+    if (!doc.exists) {
+      // Unexpected: no user doc — sign out
+      console.warn('No user doc found for', user.uid);
+      await auth.signOut();
+      return;
+    }
+    const role = doc.data().role || 'user';
+
+    // If on index page, redirect to role dashboard
+    if (onIndex) {
+      if (role === 'user') { window.location.href = 'user.html'; return; }
+      if (role === 'staff') { window.location.href = 'staff.html'; return; }
+      if (role === 'admin') { window.location.href = 'admin.html'; return; }
+    }
+
+    // If on dashboard pages, enforce role
+    if (onUserPage && role !== 'user') { // redirect to actual dashboard
+      if (role === 'admin') window.location.href = 'admin.html';
+      else window.location.href = 'staff.html';
+      return;
+    }
+    if (onStaffPage && role !== 'staff') {
+      if (role === 'admin') window.location.href = 'admin.html';
+      else window.location.href = 'user.html';
+      return;
+    }
+    if (onAdminPage && role !== 'admin') {
+      if (role === 'staff') window.location.href = 'staff.html';
+      else window.location.href = 'user.html';
+      return;
+    }
+
+    // If here, user allowed — initialize page-specific UI
+    if (onUserPage) initUserPage(user, doc.data());
+    if (onStaffPage) initStaffPage(user, doc.data());
+    if (onAdminPage) initAdminPage(user, doc.data());
+  } else {
+    // Not signed in: if on a dashboard page -> redirect to index.html
+    if (!onIndex) {
+      window.location.href = 'index.html';
+    }
+  }
+});
+
+// -------------------- REGISTER --------------------
+async function register() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const role = document.getElementById('regRole').value;
+
+  if (!name || !email || password.length < 6) { show('Please enter valid name, email and password (6+ chars).'); return; }
+
   try {
-    const name = $('regName').value.trim();
-    const aadhaar = $('regAadhaar').value.trim();
-    const village = $('regVillage').value.trim();
-    const phone = $('regPhone').value.trim();
-    const email = $('regEmail').value.trim();
-    const pass = $('regPass').value;
-
-    if(!name || !email || !pass) return alert("Fill name, email, password");
-
-    const cred = await auth.createUserWithEmailAndPassword(email, pass);
-    const uid = cred.user.uid;
-
-    // default role: user
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const uid = userCredential.user.uid;
     await db.collection('users').doc(uid).set({
-      uid, name, aadhaar, village, phone, email,
-      role: 'user', createdAt: nowTs()
+      name, email, role,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-
-    await logAction(uid, 'register', 'user', uid, {email});
-    alert('Registered! Please login.');
-  } catch(e) {
-    alert(e.message);
+    show('Registered successfully! Redirecting...');
+    // onAuthStateChanged will redirect
+  } catch (err) {
+    show(err.message);
   }
 }
 
-async function loginUser() {
+// -------------------- LOGIN --------------------
+async function login() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) { show('Enter email and password'); return; }
   try {
-    const email = $('loginEmail').value.trim();
-    const pass = $('loginPass').value;
-    await auth.signInWithEmailAndPassword(email, pass);
-    window.location.href = 'app.html';
-  } catch(e) {
-    alert(e.message);
+    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    // redirect handled in onAuthStateChanged after fetching role
+  } catch (err) {
+    show(err.message);
   }
 }
 
-async function logout() {
-  await auth.signOut();
-  window.location.href = 'index.html';
+// -------------------- RESET PASSWORD --------------------
+function resetPassword() {
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!email) { show('Enter your email'); return; }
+  auth.sendPasswordResetEmail(email)
+    .then(() => show('Password reset email sent. Check your inbox.'))
+    .catch(err => show(err.message));
 }
 
-// -------------------- 3) APP BOOT on app.html --------------------
-let me = null; // current user document
-let myRole = null;
-let servicesCache = [];
+// -------------------- LOGOUT --------------------
+function logout() {
+  auth.signOut().then(() => { window.location.href = 'index.html'; });
+}
 
-if (location.pathname.endsWith('app.html')) {
-  auth.onAuthStateChanged(async (u) => {
-    if (!u) { location.href = 'index.html'; return; }
-    const snap = await db.collection('users').doc(u.uid).get();
-    me = snap.data();
-    myRole = me?.role || 'user';
-    setRoleUI();
-    loadAll();
+// -------------------- USER PAGE --------------------
+let serviceMap = {}; // serviceId -> name
+
+function initUserPage(user, userDoc) {
+  document.getElementById('welcomeUser').innerText = `Hello, ${userDoc.name} (${userDoc.email})`;
+  loadServicesForUser();
+  loadMyApplications(user.uid);
+}
+
+function loadServicesForUser() {
+  const sel = document.getElementById('serviceSelect');
+  sel.innerHTML = '<option value="">-- Loading services --</option>';
+  db.collection('services').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    serviceMap = {};
+    sel.innerHTML = '<option value="">-- Select service --</option>';
+    snap.forEach(doc => {
+      const data = doc.data();
+      serviceMap[doc.id] = data.name;
+      const opt = document.createElement('option');
+      opt.value = doc.id;
+      opt.textContent = data.name;
+      sel.appendChild(opt);
+    });
   });
 }
 
-function setRoleUI() {
-  // badge
-  if ($('roleBadge')) $('roleBadge').textContent = myRole.toUpperCase();
-
-  // show/hide panels
-  toggle('officerServicePanel', myRole === 'officer');
-  toggle('officerAppsPanel', myRole === 'officer');
-
-  toggle('staffAppsPanel', myRole === 'staff');
-
-  toggle('userAppsPanel', myRole === 'user');
-
-  // officer tools on profile
-  toggle('officerRolePanel', myRole === 'officer');
+async function applyService() {
+  const sel = document.getElementById('serviceSelect');
+  const serviceId = sel.value;
+  if (!serviceId) { show('Choose a service'); return; }
+  const user = auth.currentUser;
+  const userDoc = (await db.collection('users').doc(user.uid).get()).data();
+  await db.collection('applications').add({
+    userId: user.uid,
+    userName: userDoc.name || user.email,
+    serviceId,
+    serviceName: serviceMap[serviceId] || '',
+    status: 'Pending',
+    assignedTo: null,
+    remarks: '',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  show('Application submitted!');
 }
 
-function toggle(id, show=true) {
-  const el = $(id);
-  if(!el) return;
-  el.classList[show ? 'remove' : 'add']('hide');
-}
-
-function showTab(id) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  $(id).classList.add('active');
-}
-
-// -------------------- 4) Services (CRUD + list + search) --------------------
-async function addService() {
-  try {
-    if (myRole !== 'officer') return alert('Only officer can add services');
-    const title = $('svcTitle').value.trim();
-    const department = $('svcDept').value.trim();
-    const description = $('svcDesc').value.trim();
-    const eligibility = $('svcElig').value.trim();
-    if (!title) return alert('Title required');
-
-    const doc = await db.collection('services').add({
-      title, department, description, eligibility,
-      active: true,
-      createdBy: me.uid, createdAt: nowTs(), updatedAt: nowTs()
+function loadMyApplications(uid) {
+  const ul = document.getElementById('myApplications');
+  db.collection('applications').where('userId', '==', uid).orderBy('createdAt', 'desc')
+    .onSnapshot(snap => {
+      ul.innerHTML = '';
+      snap.forEach(doc => {
+        const a = doc.data();
+        const li = document.createElement('li');
+        li.className = 'application';
+        li.innerHTML = `<strong>${a.serviceName}</strong> <span class="small">(${a.status})</span>
+                        <div class="small">Applied by: ${a.userName} • ${a.createdAt ? new Date(a.createdAt.seconds*1000).toLocaleString() : ''}</div>
+                        <div>Remarks: ${a.remarks || '-'}</div>`;
+        // If pending, allow cancel
+        if (a.status === 'Pending') {
+          const btn = document.createElement('button');
+          btn.textContent = 'Cancel';
+          btn.style.marginTop = '8px';
+          btn.onclick = () => {
+            if (confirm('Cancel this application?')) {
+              db.collection('applications').doc(doc.id).update({
+                status: 'Cancelled',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            }
+          };
+          li.appendChild(btn);
+        }
+        ul.appendChild(li);
+      });
     });
-
-    await logAction(me.uid, 'create', 'service', doc.id, { title });
-    $('svcTitle').value = $('svcDept').value = $('svcDesc').value = $('svcElig').value = '';
-    await loadServices();
-  } catch(e) { alert(e.message); }
 }
 
-async function updateService(sid, patch) {
-  if (myRole !== 'officer') return alert('Only officer');
-  await db.collection('services').doc(sid).update({...patch, updatedAt: nowTs()});
-  await logAction(me.uid, 'update', 'service', sid, patch);
-  await loadServices();
+// -------------------- STAFF PAGE --------------------
+function initStaffPage(user, userDoc) {
+  document.getElementById('welcomeStaff').innerText = `Hello, ${userDoc.name} (${userDoc.email})`;
+  loadStaffApplications();
 }
 
-async function deleteService(sid) {
-  if (myRole !== 'officer') return alert('Only officer');
-  if (!confirm('Delete this service?')) return;
-  await db.collection('services').doc(sid).delete();
-  await logAction(me.uid, 'delete', 'service', sid, {});
-  await loadServices();
-}
+function loadStaffApplications() {
+  const ul = document.getElementById('staffApplications');
+  db.collection('applications').where('status', '==', 'Pending').orderBy('createdAt', 'asc')
+    .onSnapshot(snap => {
+      ul.innerHTML = '';
+      snap.forEach(doc => {
+        const a = doc.data();
+        const li = document.createElement('li');
+        li.className = 'application';
+        li.innerHTML = `<strong>${a.serviceName}</strong>
+                        <div class="small">From: ${a.userName} • Applied: ${a.createdAt ? new Date(a.createdAt.seconds*1000).toLocaleString() : ''}</div>
+                        <div>Remarks: ${a.remarks || '-'}</div>`;
 
-async function loadServices() {
-  const q = await db.collection('services').orderBy('title').get();
-  servicesCache = q.docs.map(d => ({id:d.id, ...d.data()}));
-  renderServices();
-}
+        // Approve button
+        const approve = document.createElement('button');
+        approve.textContent = 'Approve';
+        approve.style.marginRight = '8px';
+        approve.onclick = () => updateApplicationStatus(doc.id, 'Approved');
 
-function renderServices() {
-  const term = ($('searchBox')?.value || '').toLowerCase();
-  const list = $('servicesList');
-  const adminList = $('servicesAdminList');
-  if (!list) return;
+        // Reject button
+        const reject = document.createElement('button');
+        reject.textContent = 'Reject';
+        reject.onclick = () => updateApplicationStatus(doc.id, 'Rejected');
 
-  const filtered = servicesCache.filter(s =>
-    s.title.toLowerCase().includes(term) ||
-    (s.department||'').toLowerCase().includes(term)
-  );
+        // Optional: assign to me
+        const assign = document.createElement('button');
+        assign.textContent = 'Assign to me';
+        assign.style.marginLeft = '8px';
+        assign.onclick = async () => {
+          const user = auth.currentUser;
+          await db.collection('applications').doc(doc.id).update({
+            assignedTo: user.uid,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          show('Assigned to you.');
+        };
 
-  // Public list (apply)
-  list.innerHTML = filtered.map(s => `
-    <div class="service">
-      <h3>${s.title}</h3>
-      <div class="note">${s.department||''}</div>
-      <p>${s.description||''}</p>
-      <p><strong>Eligibility:</strong> ${s.eligibility||'-'}</p>
-      ${myRole==='user' ? `
-      <div>
-        <label>Attach file(s): <input type="file" multiple onchange="cacheFiles('${s.id}', this.files)"></label>
-        <button onclick="applyForService('${s.id}','${encodeURIComponent(s.title)}')">Apply</button>
-      </div>` : ``}
-    </div>
-  `).join('') || '<p class="note">No services match.</p>';
-
-  // Officer admin list
-  if (adminList) {
-    adminList.innerHTML = (myRole==='officer' ? filtered.map(s => `
-      <div class="service">
-        <h3>${s.title}</h3>
-        <div class="note">${s.department||''}</div>
-        <button onclick="updateService('${s.id}', {active:${!s.active}})">${s.active?'Disable':'Enable'}</button>
-        <button onclick="deleteService('${s.id}')">Delete</button>
-      </div>
-    `).join('') : '');
-  }
-}
-
-// Cache chosen files per service id before apply
-const uploadCache = {};
-function cacheFiles(serviceId, fileList) {
-  uploadCache[serviceId] = Array.from(fileList);
-}
-
-// -------------------- 5) Applications (create / list / assign / update) --------------------
-async function applyForService(serviceId, encodedTitle) {
-  try {
-    const serviceTitle = decodeURIComponent(encodedTitle);
-    const files = uploadCache[serviceId] || [];
-
-    const appRef = await db.collection('applications').add({
-      userId: me.uid,
-      serviceId,
-      serviceTitle,
-      status: 'submitted',
-      assignedTo: null,
-      note: '',
-      files: [],
-      createdAt: nowTs(),
-      updatedAt: nowTs()
+        li.appendChild(approve);
+        li.appendChild(reject);
+        li.appendChild(assign);
+        ul.appendChild(li);
+      });
     });
-
-    // Upload files (optional)
-    const uploaded = [];
-    for (const f of files) {
-      const path = `applications/${appRef.id}/${Date.now()}_${f.name}`;
-      const snap = await storage.ref(path).put(f);
-      const url = await snap.ref.getDownloadURL();
-      uploaded.push({ name: f.name, path, url });
-    }
-    if (uploaded.length) {
-      await appRef.update({ files: uploaded, updatedAt: nowTs() });
-    }
-
-    await logAction(me.uid, 'apply', 'application', appRef.id, { serviceId, serviceTitle });
-    alert('Application submitted!');
-    loadApplications();
-  } catch(e) { alert(e.message); }
 }
 
-async function loadApplications() {
-  if (!me) return;
-  if (myRole === 'user') {
-    const q = await db.collection('applications')
-      .where('userId','==',me.uid).orderBy('createdAt','desc').get();
-    renderAppList('myApps', q.docs);
-  }
-  if (myRole === 'staff') {
-    const q = await db.collection('applications')
-      .where('assignedTo','==',me.uid).orderBy('createdAt','desc').get();
-    renderAppList('assignedApps', q.docs, true);
-  }
-  if (myRole === 'officer') {
-    const q = await db.collection('applications').orderBy('createdAt','desc').get();
-    renderAppList('allApps', q.docs, true, true); // officer can assign + update
-  }
+async function updateApplicationStatus(appId, status) {
+  await db.collection('applications').doc(appId).update({
+    status,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  show('Application ' + status);
 }
 
-function renderAppList(containerId, docs, canUpdate=false, canAssign=false) {
-  const el = $(containerId); if (!el) return;
-  if (!docs.length) { el.innerHTML = '<p class="note">No applications.</p>'; return; }
-  el.innerHTML = docs.map(d => {
-    const a = d.data();
-    const files = (a.files||[]).map(f => `<div><a href="${f.url}" target="_blank">${f.name}</a></div>`).join('');
-    return `
-      <div class="app">
-        <h3>${a.serviceTitle} <small class="note">(${d.id})</small></h3>
-        <p>Status: <strong>${a.status}</strong>${a.assignedTo? ` | Assigned to: ${a.assignedTo}`:''}</p>
-        ${files? `<div><strong>Files:</strong>${files}</div>`:''}
-        ${canAssign ? `
-          <div style="margin-top:8px;">
-            <input id="assign_${d.id}" placeholder="Assign to staff UID" />
-            <button onclick="assignStaff('${d.id}')">Assign</button>
-          </div>` : ``}
-        ${canUpdate ? `
-          <div style="margin-top:8px;">
-            <select id="status_${d.id}">
-              <option ${a.status==='submitted'?'selected':''}>submitted</option>
-              <option ${a.status==='under_review'?'selected':''}>under_review</option>
-              <option ${a.status==='approved'?'selected':''}>approved</option>
-              <option ${a.status==='rejected'?'selected':''}>rejected</option>
-            </select>
-            <input id="note_${d.id}" placeholder="Note/Remark" />
-            <button onclick="updateApplication('${d.id}')">Update</button>
-          </div>` : ``}
-      </div>
-    `;
-  }).join('');
+// -------------------- ADMIN PAGE --------------------
+function initAdminPage(user, userDoc) {
+  document.getElementById('welcomeAdmin').innerText = `Hello, ${userDoc.name} (${userDoc.email})`;
+  loadServicesAdmin();
 }
 
-async function assignStaff(appId) {
-  if (myRole !== 'officer') return alert('Only officer can assign');
-  const staffUid = $(`assign_${appId}`).value.trim();
-  if (!staffUid) return alert('Enter staff UID');
-  await db.collection('applications').doc(appId).update({ assignedTo: staffUid, updatedAt: nowTs() });
-  await logAction(me.uid, 'assign', 'application', appId, { assignedTo: staffUid });
-  loadApplications();
+function createService() {
+  const name = document.getElementById('newService').value.trim();
+  if (!name) { show('Enter a service name'); return; }
+  const user = auth.currentUser;
+  db.collection('services').add({
+    name,
+    createdBy: user.uid,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    document.getElementById('newService').value = '';
+    show('Service created.');
+  }).catch(err => show(err.message));
 }
 
-async function updateApplication(appId) {
-  if (!(myRole==='officer' || myRole==='staff')) return alert('Only staff/officer can update');
-  const status = $(`status_${appId}`).value;
-  const note = $(`note_${appId}`).value;
-  await db.collection('applications').doc(appId).update({ status, note, updatedAt: nowTs() });
-  await logAction(me.uid, 'status_update', 'application', appId, { status, note });
-  loadApplications();
-}
-
-// -------------------- 6) Profile --------------------
-async function fillProfileForm() {
-  if (!$('profName')) return;
-  $('profName').value = me?.name || '';
-  $('profAadhaar').value = me?.aadhaar || '';
-  $('profVillage').value = me?.village || '';
-  $('profPhone').value = me?.phone || '';
-  $('profEmail').value = me?.email || '';
-}
-
-async function saveProfile() {
-  const patch = {
-    name: $('profName').value.trim(),
-    aadhaar: $('profAadhaar').value.trim(),
-    village: $('profVillage').value.trim(),
-    phone: $('profPhone').value.trim(),
-    updatedAt: nowTs()
-  };
-  await db.collection('users').doc(me.uid).update(patch);
-  await logAction(me.uid, 'update', 'user', me.uid, patch);
-  alert('Profile updated');
-}
-
-// -------------------- 7) Logging --------------------
-async function logAction(actorUid, action, entityType, entityId, details={}) {
-  try {
-    const actorSnap = await db.collection('users').doc(actorUid).get();
-    const actorRole = actorSnap.exists ? actorSnap.data().role : 'unknown';
-    await db.collection('logs').add({
-      actorUid, actorRole, action, entityType, entityId, details, ts: nowTs()
+function loadServicesAdmin() {
+  const ul = document.getElementById('serviceList');
+  db.collection('services').orderBy('createdAt','desc').onSnapshot(snap => {
+    ul.innerHTML = '';
+    snap.forEach(doc => {
+      const s = doc.data();
+      const li = document.createElement('li');
+      li.className = 'application';
+      li.innerHTML = `<strong>${s.name}</strong> <div class="small">Created: ${s.createdAt ? new Date(s.createdAt.seconds*1000).toLocaleString() : ''}</div>`;
+      const del = document.createElement('button');
+      del.textContent = 'Delete';
+      del.onclick = () => {
+        if (confirm('Delete this service? This will not delete existing applications.')) {
+          db.collection('services').doc(doc.id).delete();
+        }
+      };
+      li.appendChild(del);
+      ul.appendChild(li);
     });
-  } catch(e) {
-    console.warn('logAction failed', e.message);
-  }
-}
-
-// -------------------- 8) Initial loads --------------------
-async function loadAll() {
-  await loadServices();
-  await loadApplications();
-  await fillProfileForm();
+  });
 }
