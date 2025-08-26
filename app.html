@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>E-Gram Panchayat | Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <strong>E-Gram Panchayat</strong>
+      <span id="roleBadge" class="badge"></span>
+    </div>
+    <nav>
+      <button onclick="showTab('servicesTab')">Services</button>
+      <button onclick="showTab('applicationsTab')">Applications</button>
+      <button onclick="showTab('profileTab')">My Profile</button>
+      <button class="danger" onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- SERVICES TAB -->
+    <section id="servicesTab" class="tab active">
+      <!-- Officer: Create/Update/Delete -->
+      <div id="officerServicePanel" class="card hide">
+        <h2>Manage Services (Officer)</h2>
+        <input id="svcTitle" placeholder="Service title" />
+        <input id="svcDept" placeholder="Department (e.g., Revenue)" />
+        <textarea id="svcDesc" placeholder="Description"></textarea>
+        <textarea id="svcElig" placeholder="Eligibility"></textarea>
+        <button onclick="addService()">Add Service</button>
+        <div id="servicesAdminList"></div>
+      </div>
+
+      <!-- All can view + Users can apply -->
+      <div class="card">
+        <h2>Available Services</h2>
+        <input id="searchBox" placeholder="Search by title/department" oninput="renderServices()" />
+        <div id="servicesList"></div>
+      </div>
+    </section>
+
+    <!-- APPLICATIONS TAB -->
+    <section id="applicationsTab" class="tab">
+      <!-- User: my applications -->
+      <div id="userAppsPanel" class="card hide">
+        <h2>My Applications</h2>
+        <div id="myApps"></div>
+      </div>
+
+      <!-- Staff: assigned applications -->
+      <div id="staffAppsPanel" class="card hide">
+        <h2>Assigned Applications (Staff)</h2>
+        <div id="assignedApps"></div>
+      </div>
+
+      <!-- Officer: all applications -->
+      <div id="officerAppsPanel" class="card hide">
+        <h2>All Applications (Officer)</h2>
+        <div id="allApps"></div>
+      </div>
+    </section>
+
+    <!-- PROFILE TAB -->
+    <section id="profileTab" class="tab">
+      <div class="card">
+        <h2>My Profile</h2>
+        <input id="profName" placeholder="Full Name" />
+        <input id="profAadhaar" placeholder="Aadhaar (demo)" />
+        <input id="profVillage" placeholder="Village / Ward" />
+        <input id="profPhone" placeholder="Phone" />
+        <input id="profEmail" placeholder="Email" disabled />
+        <button onclick="saveProfile()">Save Profile</button>
+      </div>
+
+      <div id="officerRolePanel" class="card hide">
+        <h2>Officer Tools</h2>
+        <p>Promote/demote roles by editing user docs in Firestore (for demo).
+        Create staff accounts via Register, then set <code>role: "staff"</code> in Firestore.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

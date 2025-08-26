@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>E-Gram Panchayat | Login / Register</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth">
+  <div class="auth-card">
+    <h1>Digital E-Gram Panchayat</h1>
+
+    <!-- Register -->
+    <section>
+      <h2>Create Account</h2>
+      <input id="regName" placeholder="Full Name" />
+      <input id="regAadhaar" placeholder="Aadhaar (last 4 ok for demo)" />
+      <input id="regVillage" placeholder="Village / Ward" />
+      <input id="regPhone" placeholder="Phone" />
+      <input id="regEmail" type="email" placeholder="Email" />
+      <input id="regPass" type="password" placeholder="Password" />
+      <button id="btnRegister">Register</button>
+    </section>
+
+    <hr/>
+
+    <!-- Login -->
+    <section>
+      <h2>Login</h2>
+      <input id="loginEmail" type="email" placeholder="Email" />
+      <input id="loginPass" type="password" placeholder="Password" />
+      <button id="btnLogin">Login</button>
+    </section>
+  </div>
+
+  <!-- Firebase SDKs (compat for simpler code) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById('btnRegister').onclick = registerUser;
+    document.getElementById('btnLogin').onclick = loginUser;
+  </script>
+</body>
+</html>
