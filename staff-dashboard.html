@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Staff Dashboard — E-Gram</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container-row">
+      <div class="brand small">
+        <img src="images/logo.png" alt="logo" class="logo"/>
+        <div><h1 class="brand-title">Staff — E-Gram</h1></div>
+      </div>
+      <nav class="nav">
+        <button id="logoutBtn" class="btn-logout">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>All Applications</h2>
+      <div id="applicationsList"></div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/staff.js"></script>
+  <script>
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) window.location = 'login.html';
+      else initStaffDashboard();
+    });
+  </script>
+</body>
+</html>

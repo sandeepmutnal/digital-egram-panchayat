@@ -1,0 +1,38 @@
+/* Clean govt-like theme */
+:root{
+  --primary:#0b3a6b;
+  --accent:#0ea5e9;
+  --muted:#6b7280;
+  --card:#ffffff;
+  --bg:#f1f5f9;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;background:var(--bg);color:#111}
+.container{max-width:1000px;margin:24px auto;padding:16px}
+.topbar{background:var(--primary);color:#fff;padding:12px 18px;box-shadow:0 4px 12px rgba(2,6,23,0.15)}
+.container-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:50px;height:50px;object-fit:contain;border-radius:7px;background:#fff;padding:7px;}
+.brand-title{margin:0;font-size:1.05rem}
+.subtitle{margin:0;color:#cfe7ff;font-size:0.85rem}
+.nav a{color:#d2e9ff;margin-left:14px;text-decoration:none;font-weight:600}
+.card{background:var(--card);padding:18px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06);margin-bottom:18px}
+.auth-card{max-width:480px;margin:36px auto}
+.form label{display:block;margin:10px 0 6px}
+.form input,.form textarea,.form select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef6;background:#fbfdff}
+.btn{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;box-shadow:0 4px 8px rgba(14,165,233,0.12)}
+.btn-outline{background:transparent;border:1px solid #d1e8fb;padding:8px 12px;color:var(--primary);border-radius:8px}
+.btn-logout{background:#ff6b6b;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+.row{display:flex;gap:8px;align-items:center}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.small{font-size:0.95rem;color:var(--muted)}
+.card h2{margin-top:0}
+.card h3{margin:0 0 8px}
+.card p{margin:0 0 12px}
+.card .muted{color:var(--muted);font-size:0.95rem}
+
+/* responsive */
+@media (max-width:760px){
+  .container-row{flex-direction:column;align-items:flex-start}
+  .nav{margin-top:8px}
+}

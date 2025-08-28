@@ -1,44 +1,73 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>E-Gram Panchayat — Login / Register</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Digital E-Gram Panchayat</title>
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <!-- Your Firebase & User Scripts -->
+  <script src="firebase-config.js"></script>
+  <script src="user.js"></script>
 </head>
 <body>
-  <h1>🚀 Digital E-Gram Panchayat</h1>
-
-  <div class="form-box">
-    <h2>Register</h2>
-    <input type="text" id="regName" placeholder="Full Name" />
-    <input type="email" id="regEmail" placeholder="Email" />
-    <input type="password" id="regPassword" placeholder="Password (6+ chars)" />
-    <select id="regRole">
-      <option value="user">User</option>
-      <option value="staff">Staff</option>
-      <option value="admin">Admin</option>
-    </select>
-    <button onclick="register()">Register</button>
-  </div>
-
-  <div class="form-box">
-    <h2>Login</h2>
-    <input type="email" id="loginEmail" placeholder="Email" />
-    <input type="password" id="loginPassword" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <p><a href="#" onclick="toggleReset(true); return false;">Forgot password?</a></p>
-
-    <div id="resetBox" style="display:none; margin-top:10px;">
-      <input type="email" id="resetEmail" placeholder="Enter your email to reset" />
-      <button onclick="resetPassword()">Send reset email</button>
-      <p><a href="#" onclick="toggleReset(false); return false;">Back to login</a></p>
+  <header class="topbar">
+    <div class="container-row">
+      <div class="brand">
+        <img src="images/logo.png" alt="logo" class="logo" />
+        <div>
+          <h1>Digital E-Gram Panchayat</h1>
+          <p class="subtitle">Transparent • Accessible • Efficient</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="index.html">Home</a>
+        <a href="register.html">Register</a>
+        <a href="login.html">Login</a>
+        <a href="dashboard.html">Dashboard</a> <!-- Added dashboard link -->
+      </nav>
     </div>
-  </div>
+  </header>
 
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="app.js"></script>
+  <main class="container">
+    <section class="hero card">
+      <h2>Apply for Gram Panchayat Services Online</h2>
+      <p>
+        Fast, paperless, and trackable applications for local government services.
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="register.html">Get Started</a>
+        <a class="btn-outline" href="login.html">Login</a>
+      </div>
+    </section>
+
+    <section class="features">
+      <article class="card">
+        <h3>For Citizens</h3>
+        <p>Apply for services, track status, and view profile.</p>
+      </article>
+      <article class="card">
+        <h3>For Staff</h3>
+        <p>Review applications and update statuses.</p>
+      </article>
+      <article class="card">
+        <h3>For Admin</h3>
+        <p>Create services, manage the system, and monitor activity.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>&copy; <span id="year"></span> Digital E-Gram Panchayat</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
